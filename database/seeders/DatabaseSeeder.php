@@ -16,8 +16,8 @@ class DatabaseSeeder extends Seeder
         // Create admin user
         User::create([
             'name' => 'Administrator',
-            'email' => 'admin@logbook.test',
-            'password' => Hash::make('password'),
+            'email' => 'admin@injourney.id',
+            'password' => Hash::make('elbandjaya3'),
             'role' => 'admin',
             'is_active' => true,
             'email_verified_at' => now(),
@@ -77,7 +77,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->command->info('Seeder completed!');
-        $this->command->info('Admin: admin@logbook.test / password');
+        $this->command->info('Admin: admin@injourney.id / elbandjaya3');
         $this->command->info('Student: 0012345678 / password (NISN login)');
     }
 }
