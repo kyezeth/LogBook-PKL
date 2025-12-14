@@ -13,8 +13,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Create admin user (only if doesn't exist)
-        User::firstOrCreate(
+        // Create or update admin user
+        User::updateOrCreate(
             ['email' => 'admin@injourney.id'],
             [
                 'name' => 'Administrator',
@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
                 'role' => 'admin',
                 'is_active' => true,
                 'email_verified_at' => now(),
+                'failed_login_attempts' => 0,
+                'locked_until' => null,
             ]
         );
 
