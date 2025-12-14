@@ -96,6 +96,11 @@ class User extends Authenticatable
     public function getProfilePhotoUrlAttribute(): string
     {
         if ($this->profile_photo) {
+            // If it's already a full URL (Cloudinary), return as-is
+            if (str_starts_with($this->profile_photo, 'http')) {
+                return $this->profile_photo;
+            }
+            // Otherwise, assume it's a local storage path
             return asset('storage/' . $this->profile_photo);
         }
         

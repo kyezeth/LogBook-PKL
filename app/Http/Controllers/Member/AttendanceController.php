@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attendance;
+use App\Services\CloudinaryService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -12,6 +13,13 @@ use Carbon\Carbon;
 
 class AttendanceController extends Controller
 {
+    protected CloudinaryService $cloudinary;
+
+    public function __construct(CloudinaryService $cloudinary)
+    {
+        $this->cloudinary = $cloudinary;
+    }
+
     /**
      * Display attendance list
      */
@@ -92,7 +100,7 @@ class AttendanceController extends Controller
             return back()->with('error', 'Anda sudah melakukan check-in hari ini.');
         }
 
-        // Process and save the photo
+        // Process and save the photo to Cloudinary
         $photoPath = $this->processPhoto($request->input('photo'), $user->id, 'check-in');
 
         // Get today's schedule for the user
@@ -186,7 +194,7 @@ class AttendanceController extends Controller
             return back()->with('error', 'Anda sudah melakukan check-out hari ini.');
         }
 
-        // Process and save the photo
+        // Process and save the photo to Cloudinary
         $photoPath = $this->processPhoto($request->input('photo'), $user->id, 'check-out');
 
         $attendance->update([
@@ -213,29 +221,32 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Process base64 photo and save to storage
+     * Process base64 photo and upload to Cloudinary
      */
     private function processPhoto(string $base64Image, int $userId, string $type): string
     {
-        // Extract the base64 data
-        $imageData = preg_replace('/^data:image\/\w+;base64,/', '', $base64Image);
-        $imageData = base64_decode($imageData);
-
-        // Generate filename
-        $filename = sprintf(
-            'attendance/%s/%s_%s_%s.jpg',
-            now()->format('Y-m'),
-            $userId,
-            $type,
-            now()->format('Ymd_His')
-        );
-
-        // Save the file
-        Storage::disk('public')->put($filename, $imageData);
-
-        // TODO: Add image optimization/compression here with Intervention Image
-        // For now, just save the raw image
-
-        return $filename;
+        $publicId = sprintf('%s_%s_%s', $userId, $type, now()->format('Ymd_His'));
+        $folder = 'attendance/' . now()->format('Y-m');
+        
+        $url = $this->cloudinary->uploadBase64($base64Image, $folder, $publicId);
+        
+        if (!$url) {
+            // Fallback to local storage if Cloudinary fails
+            $imageData = preg_replace('/^data:image\/\w+;base64,/', '', $base64Image);
+            $imageData = base64_decode($imageData);
+            
+            $filename = sprintf(
+                'attendance/%s/%s_%s_%s.jpg',
+                now()->format('Y-m'),
+                $userId,
+                $type,
+                now()->format('Ymd_His')
+            );
+            
+            Storage::disk('public')->put($filename, $imageData);
+            return $filename;
+        }
+        
+        return $url;
     }
 }

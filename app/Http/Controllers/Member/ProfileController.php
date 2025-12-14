@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Member;
 
 use App\Http\Controllers\Controller;
+use App\Services\CloudinaryService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -13,6 +14,13 @@ use Illuminate\View\View;
 
 class ProfileController extends Controller
 {
+    protected CloudinaryService $cloudinary;
+
+    public function __construct(CloudinaryService $cloudinary)
+    {
+        $this->cloudinary = $cloudinary;
+    }
+
     /**
      * Display the user's profile form.
      */
@@ -54,15 +62,21 @@ class ProfileController extends Controller
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
 
-        // Handle profile photo upload
+        // Handle profile photo upload to Cloudinary
         if ($request->hasFile('profile_photo')) {
-            // Delete old photo
-            if ($user->profile_photo) {
+            // Delete old photo from Cloudinary
+            if ($user->profile_photo && str_contains($user->profile_photo, 'cloudinary')) {
+                $this->cloudinary->delete($user->profile_photo);
+            } elseif ($user->profile_photo) {
+                // Delete from local storage (legacy)
                 Storage::disk('public')->delete($user->profile_photo);
             }
 
-            $path = $request->file('profile_photo')->store('profiles', 'public');
-            $validated['profile_photo'] = $path;
+            // Upload to Cloudinary
+            $photoUrl = $this->cloudinary->upload($request->file('profile_photo'), 'profiles');
+            if ($photoUrl) {
+                $validated['profile_photo'] = $photoUrl;
+            }
         }
 
         // Update basic info
