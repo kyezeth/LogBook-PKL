@@ -1,0 +1,8 @@
+[phases.build]
+cmds = [
+    "composer install --no-dev --optimize-autoloader",
+    "npm install",
+    "npm run build"
+]
+[start]
+cmd = "php artisan migrate --force && php artisan config:cache && php -S 0.0.0.0:$PORT -t public"
